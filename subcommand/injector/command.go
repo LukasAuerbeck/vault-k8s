@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,9 +17,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	agentInject "github.com/hashicorp/vault-k8s/agent-inject"
-	"github.com/hashicorp/vault-k8s/helper/cert"
-	"github.com/hashicorp/vault-k8s/leader"
+	agentInject "github.com/LukasAuerbeck/vault-k8s/agent-inject"
+	"github.com/LukasAuerbeck/vault-k8s/helper/cert"
+	"github.com/LukasAuerbeck/vault-k8s/leader"
 	"github.com/mitchellh/cli"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/types"
@@ -273,12 +274,12 @@ func (c *Command) certWatcher(ctx context.Context, ch <-chan cert.Bundle, client
 
 			_, err := clientset.AdmissionregistrationV1beta1().
 				MutatingWebhookConfigurations().
-				Patch(c.flagAutoName, types.JSONPatchType, []byte(fmt.Sprintf(
+				Patch(context.Background(), c.flagAutoName, types.JSONPatchType, []byte(fmt.Sprintf(
 					`[{
 						"op": "add",
 						"path": "/webhooks/0/clientConfig/caBundle",
 						"value": %q
-					}]`, value)))
+					}]`, value)), metav1.PatchOptions{})
 			if err != nil {
 				c.UI.Error(fmt.Sprintf(
 					"Error updating MutatingWebhookConfiguration: %s",

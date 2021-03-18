@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/consul/command/flags"
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault-k8s/agent-inject/agent"
+	"github.com/LukasAuerbeck/vault-k8s/agent-inject/agent"
 	"github.com/kelseyhightower/envconfig"
 )
 

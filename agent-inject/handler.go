@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault-k8s/agent-inject/agent"
+	"github.com/LukasAuerbeck/vault-k8s/agent-inject/agent"
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/mattbaird/jsonpatch"
 	"k8s.io/api/admission/v1beta1"

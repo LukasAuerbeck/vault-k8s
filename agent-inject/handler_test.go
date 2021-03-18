@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault-k8s/agent-inject/agent"
+	"github.com/LukasAuerbeck/vault-k8s/agent-inject/agent"
 	"github.com/mattbaird/jsonpatch"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/admission/v1beta1"

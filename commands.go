@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	cmdInjector "github.com/hashicorp/vault-k8s/subcommand/injector"
-	cmdVersion "github.com/hashicorp/vault-k8s/subcommand/version"
-	"github.com/hashicorp/vault-k8s/version"
+	cmdInjector "github.com/LukasAuerbeck/vault-k8s/subcommand/injector"
+	cmdVersion "github.com/LukasAuerbeck/vault-k8s/subcommand/version"
+	"github.com/LukasAuerbeck/vault-k8s/version"
 	"github.com/mitchellh/cli"
 )
 

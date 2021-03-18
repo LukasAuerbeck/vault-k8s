@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault-k8s/leader"
+	"github.com/LukasAuerbeck/vault-k8s/leader"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,7 +149,7 @@ func TestGenSource_leader(t *testing.T) {
 	testBundleVerify(t, &bundle)
 
 	// check that the Secret has been created
-	checkSecret, err := source.K8sClient.CoreV1().Secrets(source.Namespace).Get(certSecretName, metav1.GetOptions{})
+	checkSecret, err := source.K8sClient.CoreV1().Secrets(source.Namespace).Get(context.Background(), certSecretName, metav1.GetOptions{})
 	require.NoError(t, err)
 	require.Equal(t, checkSecret.Data["cert"], bundle.Cert,
 		"cert in the Secret should've matched what was returned from source.Certificate()",

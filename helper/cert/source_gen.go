@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault-k8s/leader"
+	"github.com/LukasAuerbeck/vault-k8s/leader"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,9 +194,9 @@ func (s *GenSource) updateSecret(bundle Bundle) error {
 	}
 	// Attempt updating the Secret first, and if it doesn't exist, fallback to
 	// create
-	_, err := s.K8sClient.CoreV1().Secrets(s.Namespace).Update(secret)
+	_, err := s.K8sClient.CoreV1().Secrets(s.Namespace).Update(context.Background(), secret, metav1.UpdateOptions{})
 	if errors.IsNotFound(err) {
-		_, err = s.K8sClient.CoreV1().Secrets(s.Namespace).Create(secret)
+		_, err = s.K8sClient.CoreV1().Secrets(s.Namespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	}
 	if err != nil {
 		return err

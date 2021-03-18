@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/hashicorp/vault-k8s/version"
+	"github.com/LukasAuerbeck/vault-k8s/version"
 	"github.com/mitchellh/cli"
 )
 
