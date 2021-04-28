@@ -40,8 +40,13 @@ func TestContainerSidecarVolume(t *testing.T) {
 
 	pod := testPod(annotations)
 	var patches []*jsonpatch.JsonPatchOperation
+	agentConfig := AgentConfig{
+		"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100",
+		DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "", "map",
+		DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem,
+	}
 
-	err := Init(pod, AgentConfig{"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100", DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, ""})
+	err := Init(pod, agentConfig)
 	if err != nil {
 		t.Errorf("got error, shouldn't have: %s", err)
 	}
@@ -59,34 +64,110 @@ func TestContainerSidecarVolume(t *testing.T) {
 	require.Equal(
 		t,
 		[]corev1.VolumeMount{
-			corev1.VolumeMount{
+			{
 				Name:      agent.ServiceAccountName,
 				MountPath: agent.ServiceAccountPath,
 				ReadOnly:  true,
 			},
-			corev1.VolumeMount{
+			{
 				Name:      tokenVolumeNameSidecar,
 				MountPath: tokenVolumePath,
 				ReadOnly:  false,
 			},
-			corev1.VolumeMount{
+			{
 				Name:      secretVolumeName,
 				MountPath: agent.Annotations[AnnotationVaultSecretVolumePath],
 				ReadOnly:  false,
 			},
-			corev1.VolumeMount{
+			{
 				Name:      fmt.Sprintf("%s-custom-%d", secretVolumeName, 0),
 				MountPath: "/etc/container_environment",
 				ReadOnly:  false,
 			},
-			corev1.VolumeMount{
+			{
 				Name:      extraSecretVolumeName,
 				MountPath: extraSecretVolumePath,
 				ReadOnly:  true,
 			},
-			corev1.VolumeMount{
+			{
 				Name:      "tobecopied",
 				MountPath: "/etc/somewhereelse",
+				ReadOnly:  false,
+			},
+		},
+		container.VolumeMounts,
+	)
+}
+
+func TestContainerSidecarVolumeWithIRSA(t *testing.T) {
+
+	annotations := map[string]string{
+		AnnotationVaultRole: "foobar",
+		// this will have different mount path
+		fmt.Sprintf("%s-%s", AnnotationAgentInjectSecret, "secret1"):     "secrets/secret1",
+		fmt.Sprintf("%s-%s", AnnotationVaultSecretVolumePath, "secret1"): "/etc/container_environment",
+
+		// this secret will have same mount path as default mount path
+		// adding this so we can make sure we don't have duplicate
+		// volume mounts
+		fmt.Sprintf("%s-%s", AnnotationAgentInjectSecret, "secret2"):     "secret/secret2",
+		fmt.Sprintf("%s-%s", AnnotationVaultSecretVolumePath, "secret2"): "/etc/default_path",
+
+		// Default path for all secrets
+		AnnotationVaultSecretVolumePath: "/etc/default_path",
+
+		fmt.Sprintf("%s-%s", AnnotationAgentInjectSecret, "secret3"): "secret/secret3",
+	}
+
+	pod := testPodIRSA(annotations)
+	var patches []*jsonpatch.JsonPatchOperation
+
+	err := Init(pod, AgentConfig{
+		"foobar-image", "http://foobar:1234", "aws", "test", "test", true, "1000", "100",
+		DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "", "map",
+		DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem})
+	if err != nil {
+		t.Errorf("got error, shouldn't have: %s", err)
+	}
+
+	agent, err := New(pod, patches)
+	require.NoError(t, err)
+	assert.Equal(t, "aws-iam-token", agent.AwsIamTokenAccountName)
+	assert.Equal(t, "/var/run/secrets/eks.amazonaws.com/serviceaccount", agent.AwsIamTokenAccountPath)
+
+	if err := agent.Validate(); err != nil {
+		t.Errorf("agent validation failed, it shouldn't have: %s", err)
+	}
+
+	container, err := agent.ContainerSidecar()
+	require.NoError(t, err)
+	// One token volume mount, one config volume mount and two secrets volume mounts
+	require.Equal(
+		t,
+		[]corev1.VolumeMount{
+			{
+				Name:      agent.ServiceAccountName,
+				MountPath: agent.ServiceAccountPath,
+				ReadOnly:  true,
+			},
+			{
+				Name:      tokenVolumeNameSidecar,
+				MountPath: tokenVolumePath,
+				ReadOnly:  false,
+			},
+			{
+				Name:      agent.AwsIamTokenAccountName,
+				MountPath: agent.AwsIamTokenAccountPath,
+				ReadOnly:  true,
+			},
+			{
+				Name:      secretVolumeName,
+				MountPath: agent.Annotations[AnnotationVaultSecretVolumePath],
+				ReadOnly:  false,
+			},
+			{
+				Name:      fmt.Sprintf("%s-custom-%d", secretVolumeName, 0),
+				MountPath: "/etc/container_environment",
 				ReadOnly:  false,
 			},
 		},
@@ -102,7 +183,13 @@ func TestContainerSidecar(t *testing.T) {
 	pod := testPod(annotations)
 	var patches []*jsonpatch.JsonPatchOperation
 
-	err := Init(pod, AgentConfig{"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", false, "1000", "100", DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "http://proxy:3128"})
+	agentConfig := AgentConfig{
+		"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", false, "1000", "100",
+		DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "https://proxy:3128", "map",
+		DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem,
+	}
+
+	err := Init(pod, agentConfig)
 	if err != nil {
 		t.Errorf("got error, shouldn't have: %s", err)
 	}
@@ -215,7 +302,13 @@ func TestContainerSidecarRevokeHook(t *testing.T) {
 			pod := testPod(annotations)
 			var patches []*jsonpatch.JsonPatchOperation
 
-			err := Init(pod, AgentConfig{"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", tt.revokeFlag, "1000", "100", DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, ""})
+			agentConfig := AgentConfig{
+				"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", tt.revokeFlag, "1000", "100",
+				DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "", "map",
+				DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem,
+			}
+
+			err := Init(pod, agentConfig)
 			if err != nil {
 				t.Errorf("got error, shouldn't have: %s", err)
 			}
@@ -264,7 +357,13 @@ func TestContainerSidecarConfigMap(t *testing.T) {
 	pod := testPod(annotations)
 	var patches []*jsonpatch.JsonPatchOperation
 
-	err := Init(pod, AgentConfig{"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100", DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, ""})
+	agentConfig := AgentConfig{
+		"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100",
+		DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "", "map",
+		DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem,
+	}
+
+	err := Init(pod, agentConfig)
 	if err != nil {
 		t.Errorf("got error, shouldn't have: %s", err)
 	}
@@ -960,7 +1059,13 @@ func TestContainerCache(t *testing.T) {
 			pod := testPod(tt.annotations)
 			var patches []*jsonpatch.JsonPatchOperation
 
-			err := Init(pod, AgentConfig{"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100", DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, ""})
+			agentConfig := AgentConfig{
+				"foobar-image", "http://foobar:1234", DefaultVaultAuthType, "test", "test", true, "1000", "100",
+				DefaultAgentRunAsSameUser, DefaultAgentSetSecurityContext, "", "map",
+				DefaultResourceRequestCPU, DefaultResourceRequestMem, DefaultResourceLimitCPU, DefaultResourceLimitMem,
+			}
+
+			err := Init(pod, agentConfig)
 			require.NoError(t, err)
 
 			agent, err := New(pod, patches)

@@ -1,9 +1,26 @@
 ## Unreleased
 
+Bugs:
+* Fix agent-inject-token when caching enabled: [GH-290](https://github.com/hashicorp/vault-k8s/pull/250)
+* Remove new line from injected token: [GH-290](https://github.com/hashicorp/vault-k8s/pull/250)
+
+## 0.10.0 (April 14, 2021)
+
+Features:
+* Added flags/envs to change default resources for all injected containers: [GH-235](https://github.com/hashicorp/vault-k8s/pull/235)
+* Added an annotation to use template path on disk: [GH-222](https://github.com/hashicorp/vault-k8s/pull/222)
+* Added an annotation and global flag to change default template from map to json: [GH-242](https://github.com/hashicorp/vault-k8s/pull/242)
+
+Improvements:
+* Better support for IRSA on AWS/EKS: [GH-169](https://github.com/hashicorp/vault-k8s/pull/169)
+
+## 0.9.0 (March 18, 2021)
+
 Features:
 * Added annotation to specify HTTPS proxy on Vault Agent containers: [GH-211](https://github.com/hashicorp/vault-k8s/pull/211)
 * Added support for all auto-auth methods: [GH-213](https://github.com/hashicorp/vault-k8s/pull/213)
 * Added support for persistent agent caching: [GH-229](https://github.com/hashicorp/vault-k8s/pull/229)
+* Arm binaries and images are now being published as part of a release: [GH-221](https://github.com/hashicorp/vault-k8s/pull/221)
 
 Improvements:
 
