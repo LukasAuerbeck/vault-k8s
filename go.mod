@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/stretchr/testify v1.6.1
-	k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.20.4
-	k8s.io/client-go v0.20.4
+	k8s.io/api v0.21.0
+	k8s.io/apimachinery v0.21.0
+	k8s.io/client-go v0.21.0
 )
